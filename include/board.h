@@ -1,3 +1,6 @@
+#ifndef BOARD_H
+#define BOARD_H
+
  /**
   * board.h
   *
@@ -13,37 +16,42 @@
   *     [x] Get player's input
   *     [x] Determine if game is over
   */
+#include "move.h"
 #include <iostream>
 
 const int ROWS = 3;
 const int COLS = 3;
+const int CELLS = 9;
 const int LINE_WIDTH = 12;
 
 class Board_t {
 private:
-    char **board;
+    char *board;
+    char winner;
 
+    bool equals3(char a, char b, char c) {
+        return a == b && a == c && a != '.';
+    }
+
+    friend class AI_t;
+    
 public:
     // Initialize the board with '.'
     Board_t() {
-        board = new char*[ROWS];
-        for(int r = 0; r < ROWS; ++r) {
-            board[r] = new char[COLS];
-            for(int c = 0; c < COLS; ++c) {
-                board[r][c] = '.';
-            }
+        board = new char[CELLS];
+        for(int i = 0; i < CELLS; ++i) {
+            board[i] = '.';
         }
+        winner = '.';
     }
 
     // Copy constructor
     Board_t(const Board_t& newBoard) {
-        board = new char*[ROWS];
-        for(int r = 0; r < ROWS; ++r) {
-            board[r] = new char[COLS];
-            for(int c = 0; c < COLS; ++c) {
-                board[r][c] = newBoard.board[r][c];
-            }
+        board = new char[CELLS];
+        for(int i = 0; i < CELLS; ++i) {
+            board[i] = newBoard.board[i];
         }
+        winner = newBoard.winner;
     }
 
     // Overloaded assignment operator
@@ -51,35 +59,30 @@ public:
         if(this == &newBoard) return *this;
 
         // Deallocate board if needed
-        if(board) {
-            for(int i = 0; i < ROWS; ++i) {
-                delete[] board[i];
-            }
-            delete[] board;
+        if(board) delete[] board;
+
+        board = new char[CELLS];
+        for(int i = 0; i < CELLS; ++i) {
+            board[i] = newBoard.board[i];
         }
 
-        board = new char*[ROWS];
-        for(int r = 0; r < ROWS; ++r) {
-            board[r] = new char[COLS];
-            for(int c = 0; c < COLS; ++c) {
-                board[r][c] = newBoard.board[r][c];
-            }
-        }
+        winner = newBoard.winner;
 
         return *this;
     }
 
     // Destroy the board
     ~Board_t() {
-        for(int r = 0; r < ROWS; ++r) {
-            delete[] board[r];
-        }
         delete[] board;
     }
 
     // Return board
-    char** getBoard() const {
+    char* getBoard() const {
         return board;
+    }
+
+    char getWinner() const {
+        return winner;
     }
 
     /*
@@ -89,12 +92,17 @@ public:
     ---|---|---
      o | x | x
     */
-    void print(std::ostream &os) {
+    void print(std::ostream &os) const {
+        // Using rows and columns in this way gives a much more
+        // native way to generate each row to print
+        os << "   0   1   2 \n";
         for(int r = 0; r < ROWS; ++r) {
+            os << r << " ";
             for(int c = 0; c < COLS; ++c) {
+                int ndx = r*3+c;
                 os << " ";
-                if(board[r][c] == 'x' || board[r][c] == 'o')
-                    os << board[r][c];
+                if(board[ndx] == 'x' || board[ndx] == 'o')
+                    os << board[ndx];
                 else
                     os << " ";
                 os << " ";
@@ -107,89 +115,76 @@ public:
 
             // Print buffer lines
             if(r+1 < ROWS)
-                os << "---|---|---\n";
+                os << "  ---|---|---\n";
         }
     }
 
     // Get a player move and put it on the board
     // Return false if fails to insert
-    bool playerMove(int r, int c, char move) {
-        if(board[r][c] == 'x' || board[r][c] == 'o') return false;
-
-        board[r][c] = move;
+    bool makeMove(const Move_t& move) {
+        int ndx = move.r*3+move.c;
+        if(board[ndx] == 'x' || board[ndx] == 'o') return false;
+        board[ndx] = move.player;
         return true;
     }
 
-    // Only check rows and columns and/or diagonals that the move is played in
-    // Returns 'x' or 'o' if that player has won
-    // Otherwise returns '.'
-    /*
-       // NOT WORKING AS EXPECTED
-    char optimizedGameOverCheck(int r, int c) {
-        // Check the row 
-        if(board[r][0] == board[r][1] && board[r][0] == board[r][2])
-            return board[r][c];
-
-        // Check the column
-        if(board[0][c] == board[1][c] && board[0][c]  == board[2][c])
-            return board[r][c];
-
-        // Only check diagonals if in a cell that supports diagonals
-        // This skips all cells not on the diagonal
-        if((r+c)%2 == 0) {
-            bool fd = false, sd = false;
-            if(r == 1 && c == 1) {
-                fd = true;
-                sd = true;
-            }
-            if(r == 0) {
-                if(c == 0)
-                    fd = true;
-                if(c == 2)
-                    sd = true;
-                // fd = (c == 0);
-                // sd = (c == 2);
-            }
-            if(r == 2) {
-                if(c == 2)
-                    fd = true;
-                if(c == 0)
-                    sd = true;
-                // fd = (c == 2);
-                // sd = (c == 0);
-            }
-
-            // Increment rows, increment columns
-            if(fd)
-                return board[0][0] == board[1][1] && board[1][1] == board[2][2];
-            // Decrement rows, increment columns
-            if(sd)
-                return board[2][0] == board[1][1] && board[1][1] == board[0][2];
-        }
-
-        return '.';
-    }
-    */
     // Game over?
     // Returns 'x' or 'o' if that player has won
     // Otherwise returns '.'
-    char isGameOver() {
-        // Check columns
-        for(int c = 0; c < COLS; ++c)
-            if((board[0][c] == board[1][c] && board[0][c] == board[2][c]) && board[1][c] != '.')
-                return board[1][c];
-
+    bool checkGameOver() {
         // Check rows
-        for(int r = 0; r < ROWS; ++r)
-            if((board[r][0] == board[r][1] && board[r][0] == board[r][2]) && board[r][1] != '.')
-                return board[r][1];
+        for(int i = 0; i < ROWS; ++i) {
+            int ndx1 = (3*i)+0;
+            int ndx2 = (3*i)+1;
+            int ndx3 = (3*i)+2;
+
+            if(equals3(board[ndx1], board[ndx2], board[ndx3])) {
+                winner = board[ndx1];
+                return true;
+            }
+        }
+
+        // Check columns
+        for(int i = 0; i < COLS; ++i) {
+            int ndx1 = (3*0)+i;
+            int ndx2 = (3*1)+i;
+            int ndx3 = (3*2)+i;
+
+            if(equals3(board[ndx1], board[ndx2], board[ndx3])) {
+                winner = board[ndx1];
+                return true;
+            }
+        }
 
         // Check diagonals
-        if((board[0][0] == board[1][1] && board[0][0] == board[2][2]) && board[1][1] != '.')
-            return board[1][1];
-        if((board[0][2] == board[1][1] && board[0][0] == board[2][0]) && board[1][1] != '.')
-            return board[1][1];
+        for(int i = 0; i < 2; ++i) {
+            // Gives top-left to bottom-right diagonal on the first iteration
+            // and bottom-left to top-right diagonal on the second iteration
+            int ndx1 = (4 / (i+1)) * (i+0);
+            int ndx2 = (4 / (i+1)) * (i+1);
+            int ndx3 = (4 / (i+1)) * (i+2);
 
-        return '.';
+            if(equals3(board[ndx1], board[ndx2], board[ndx3])) {
+                // return board[ndx1];
+                winner = board[ndx1];
+                return true;
+            }
+        }
+
+        int open = 0;
+        for(int i = 0; i < CELLS; ++i) {
+            if(board[i] == '.') {
+                ++open;
+            }
+        }
+
+        // Game is over but no winner, tie
+        if(open == 0) {
+            return true;
+        }
+
+        return false;
     }
 };
+
+#endif

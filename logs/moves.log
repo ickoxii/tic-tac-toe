@@ -1,0 +1,10 @@
+Player x [1, 1]
+Player o [0, 0]
+Player x [0, 2]
+Player o [0, 1]
+Player x [2, 2]
+Player o [1, 0]
+Player x [2, 1]
+Player o [1, 2]
+Player x [2, 0]
+winner: player

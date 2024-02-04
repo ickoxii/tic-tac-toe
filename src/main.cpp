@@ -1,62 +1,101 @@
-#include "ai.h"
-    //#include "board.h"
+#include "../include/ai.h"
+    // #include "board.h"
+        // #include "move.h"
 #include <iostream>
+#include <fstream>
 #include <cassert>
+
+void logmove(std::fstream& of, Move_t move) {
+    of << "Player " << move.player << " [" << move.r << ", " << move.c << "]\n";
+}
 
 int main(int argc, char*argv[]) {
     Board_t board;
     bool gameOver = false;
-    bool playerx = true;
-    char avatar = 'x';
+    bool playerFirst = true;
+    char player = 'x';
     char winner = '.';
-    int turnCount = 0;
-    const int MAX_TURNS = 9;
-    int r = 0, c = 0;
+    char choice;
+    int turn = 0;
 
+    bool DBG = (argc > 1) ? true : false;
+    AI_t ai(DBG, 'o');
+
+    std::fstream of("logs/moves.log", std::ios::out);
+    
+    // Check if player goes first
     std::cout << "New game!\n";
-    std::cout << "Player 'x' and Player 'o'\n";
-    std::cout << "Player 'x' will begin!\n";
-    std::cout << "Please enter the row and column (0-indexed)\n";
-    board.print(std::cout);
-
-    while(!gameOver && turnCount < MAX_TURNS) {
-        bool iofail = false;
-        // Set whoever is playing this turn
-        avatar = (playerx) ? 'x' : 'o';
-
-        ++turnCount;
-
-        // Get player input
-        do {
-            iofail = false;
-            std::cout << "Turn " << turnCount << "\n";
-            std::cout << "Player " << ((playerx) ? "x" : "o") << " enter row and column\n";
-            std::cin >> r >> c;
-            if(!board.playerMove(r, c, avatar)) {
-                iofail = true;
-                std::cout << "Player has already played at " << r << " " << c << "\n\n";
-                board.print(std::cout);
-            }
-        } while(iofail);
-        
-        // Check if game over
-        winner = board.isGameOver();
-        std::cout << "winner: " << winner << "\n";
-        gameOver = (winner == 'x' || winner == 'o') ? true : false;
-
-        // Print board
+    std::cout << "Would you like to go first? (y/n)\n";
+    std::cin >> choice;
+    if(choice == 'n' || choice == 'N') {
+        playerFirst = false;
+    } else {
         board.print(std::cout);
+    }
+    std::cout << "You are player x\n";
 
-        // Toggle current player
-        playerx = !playerx;
+    while(!gameOver) {
+        if(!playerFirst) {
+            Move_t move = ai.bestMove(board);
+            logmove(of, move);
+            if(!board.makeMove(move)) {
+                std::cout << "AI failed to make move on turn " << turn << "\n";
+                std::cout << "Move [r,c]: [" << move.r << ", " << move.c << "\n";
+                return 69;
+            }
+            board.print(std::cout);
+            gameOver = board.checkGameOver();
+            if(!gameOver) ++turn;
+            else winner = 'o';
+        }
+
+        if(!gameOver) {
+            bool valid = false;
+            do {
+                std::cout << "Enter a row and column to move (i.e. 1 2): ";
+                int r, c;
+                std::cin >> r >> c;
+                Move_t move(r, c, player);
+                valid = board.makeMove(move);
+                if(valid) {
+                    logmove(of, move);
+                }
+            } while(!valid);
+
+            gameOver = board.checkGameOver();
+            if(!gameOver) ++turn;
+            else winner = 'x';
+        }
+
+        if(playerFirst && !gameOver) {
+            Move_t move = ai.bestMove(board);
+            logmove(of, move);
+            if(!board.makeMove(move)) {
+                std::cout << "AI failed to make move on turn " << turn << "\n";
+                std::cout << "Move [r,c]: [" << move.r << ", " << move.c << "\n";
+                return 69;
+            }
+            board.print(std::cout);
+            gameOver = board.checkGameOver();
+            if(!gameOver) ++turn;
+            else winner = 'o';
+        }
     }
 
-    winner = board.isGameOver();
+   
     if(gameOver) {
-        std::cout << "Congratulations! Player '" << winner << "' won!\n";
+        of << "winner: " << ((winner == 'x') ? "player" : "ai") << "\n";
+        if(winner == 'x') {
+            board.print(std::cout);
+            std::cout << "Congrats! You won!\n";
+        } else {
+            std::cout << "You lost... you loser\n";
+        }
     } else {
         std::cout << "Uh oh! tie game!\n";
     }
+
+    of.close();
 
     return 0;
 }
