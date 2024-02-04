@@ -33,6 +33,9 @@ private:
         return a == b && a == c && a != '.';
     }
 
+    void set(int ndx, char move) { board[ndx] = move; }
+    char at(int ndx) { return board[ndx]; }
+
     friend class AI_t;
     
 public:

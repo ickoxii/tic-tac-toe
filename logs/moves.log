@@ -1,6 +1,0 @@
-Player x [0, 0]
-Player o [0, 1]
-Player x [1, 0]
-Player o [0, 2]
-Player x [2, 0]
-winner: player

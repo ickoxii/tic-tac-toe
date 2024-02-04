@@ -22,56 +22,38 @@ private:
     char opponent;
     std::fstream of;
 
-    int minimax(Board_t& board_, int depth_, bool isMaxPlayer_) {
-        // base case: game over
-        // Scores: [ai.player = 10], [player = -10], [tie = 0]
+    int minimax(Board_t& board_, char player_) {
+        Move_t bestMove(-1, -1, player_);
+        int bestScore = INT_MIN;
+
         if(board_.checkGameOver()) {
             char winner = board_.getWinner();
-            if(winner == player) return 10;
-            if(winner == opponent) return -10;
+            if(winner == player) {
+                return 10;
+            } else if(winner == opponent) {
+                return -10;
+            }
             return 0;
         }
+        
+        for(int i = 0; i < CELLS; ++i) {
+            if(board_.at(i) != player && board_.at(i) != opponent) {
+                board_.set(i, player_);
+                int score = minimax(board_, (player_ == player) ? opponent : player);
 
-        // If we are the AI, we want to choose moves that maximizes the AI's score
-        // 
-        // If we are not the AI, we want to choose the moves the minimizes the AI's score
-        if(isMaxPlayer_) { // we want to maximize
-            if(DBG) {
-                std::cerr << "minimax depth_ " << depth_ << " maximizer ";
-            }
-            int bestScore = INT_MIN;
-            for(int i = 0; i < CELLS; ++i) {
-                Move_t move(i/3, i%3, player);
-                if(board_.board[i] == '.') {
-                    if(DBG) {
-                        std::cerr << "testing ndx [" << move.r << ", " << move.c << "]\n";
-                    }
-                    board_.board[i] = player;
-                    int score = minimax(board_, depth_+1, false);
-                    board_.board[i] = '.';
-                    bestScore = std::max(score, bestScore);
+                if(score > bestScore) {
+                    bestMove.r = i/3;
+                    bestMove.c = i%3;
+                    bestScore = score;
                 }
+
+                board_.set(i, '.');
             }
-            return bestScore;
-        } else { // we want to minimize
-            if(DBG) {
-                std::cerr << "minimax depth_ " << depth_ << " minimizer\n";
-            }
-            int bestScore = INT_MAX;
-            for(int i = 0; i < CELLS; ++i) {
-                Move_t move(i/3, i%3, opponent);
-                if(board_.board[i] == '.') {
-                    if(DBG) {
-                        std::cerr << "testing ndx [" << move.r << ", " << move.c << "]\n";
-                    }                    
-                    board_.board[i] = opponent;
-                    int score = minimax(board_, depth_+1, true);
-                    board_.board[i] = '.';
-                    bestScore = std::min(score, bestScore);
-                }
-            }
-            return bestScore;
         }
+
+        if(bestMove.r == -1 || bestMove.c == -1) return 0;
+
+        return bestScore;
     }
 
 public:
@@ -82,7 +64,7 @@ public:
 
     Move_t bestMove(const Board_t& board_) {
         Board_t board(board_);                
-        Move_t bestMove(player);
+        Move_t bestMove(-1, -1, player);
         int bestScore = INT_MIN;
 
         for(int i = 0; i < CELLS; ++i) {
@@ -90,11 +72,9 @@ public:
                 // Get coordinates
                 Move_t move(i/3, i%3, player);
 
-                // board.makeMove(move);
-                board.board[i] = player;
-                int score = minimax(board, 0, false);
-                // board.reMove(move);
-                board.board[i] = '.';
+                board.set(i, player);
+                int score = minimax(board, opponent);
+                board.set(i, '.');
 
                 // Is best move?
                 if(score > bestScore) {
