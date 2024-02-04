@@ -13,6 +13,7 @@
 #include "move.h"
     // #include "move.h"
 #include <fstream>
+#include <climits>
 
 class AI_t {
 private:
@@ -36,14 +37,14 @@ private:
         // If we are not the AI, we want to choose the moves the minimizes the AI's score
         if(isMaxPlayer_) { // we want to maximize
             if(DBG) {
-                std::cout << "minimax depth_ " << depth_ << " maximizer ";
+                std::cerr << "minimax depth_ " << depth_ << " maximizer ";
             }
             int bestScore = INT_MIN;
             for(int i = 0; i < CELLS; ++i) {
                 Move_t move(i/3, i%3, player);
                 if(board_.board[i] == '.') {
                     if(DBG) {
-                        std::cout << "testing ndx [" << move.r << ", " << move.c << "]\n";
+                        std::cerr << "testing ndx [" << move.r << ", " << move.c << "]\n";
                     }
                     board_.board[i] = player;
                     int score = minimax(board_, depth_+1, false);
@@ -54,14 +55,14 @@ private:
             return bestScore;
         } else { // we want to minimize
             if(DBG) {
-                std::cout << "minimax depth_ " << depth_ << " minimizer\n";
+                std::cerr << "minimax depth_ " << depth_ << " minimizer\n";
             }
             int bestScore = INT_MAX;
             for(int i = 0; i < CELLS; ++i) {
                 Move_t move(i/3, i%3, opponent);
                 if(board_.board[i] == '.') {
                     if(DBG) {
-                        std::cout << "testing ndx [" << move.r << ", " << move.c << "]\n";
+                        std::cerr << "testing ndx [" << move.r << ", " << move.c << "]\n";
                     }                    
                     board_.board[i] = opponent;
                     int score = minimax(board_, depth_+1, true);
@@ -76,7 +77,7 @@ private:
 public:
     AI_t(bool DBG_, char player_ = 'o') : player(player_), DBG(DBG_) {
         opponent = (player_ == 'o') ? 'x' : 'o';
-        if(DBG) std::cout << "debugging\n";
+        if(DBG) std::cerr << "debugging\n";
     }
 
     Move_t bestMove(const Board_t& board_) {
@@ -90,7 +91,7 @@ public:
                 Move_t move(i/3, i%3, player);
 
                 // board.makeMove(move);
-                board.board[i] = 'x';
+                board.board[i] = player;
                 int score = minimax(board, 0, false);
                 // board.reMove(move);
                 board.board[i] = '.';

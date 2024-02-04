@@ -18,20 +18,24 @@ help:
 	@echo "clean | remove any compile binaries"
 .PHONY: help
 
-build: $(CFILES) $(HFILES)
+build: $(CFILES) $(HFILES) Makefile
 	g++ $(CFLAGS) $(CFILES) -o $(EXE)
 .PHONY: build
 
-test-ai: $(TESTBOARD) $(HFILES)
+tiny-bot: tiny/ttttttt.cpp Makefile
+	g++ $(CFLAGS) tiny/ttttttt.cpp -o bin/ttttttt
+.PHONY: tiny-bot
+
+test-ai: $(TESTBOARD) $(HFILES) Makefile
 	g++ $(CFLAGS) $(TESTBOARD) -o $(TEXE)
 	$(TEXE)
 .PHONY: test-ai
 
-test-remove: $(TESTREMOVE) $(HFILES)
+test-remove: $(TESTREMOVE) $(HFILES) Makefile
 	g++ $(CFLAGS) $(TESTREMOVE) -o bin/test-remove
 .PHONY: test-remove
 
-unit-test: $(TESTBOARD) $(HFILES)
+unit-test: $(TESTBOARD) $(HFILES) Makefile
 	g++ $(CFLAGS) $(TESTBOARD) -o $(TEXE)
 	@for file in $(FILES); do \
 		@echo "$(FILES)"; \
@@ -40,8 +44,11 @@ unit-test: $(TESTBOARD) $(HFILES)
 	done
 .PHONY: test
 
-clean:
+clean: Makefile
 	@for file in bin/*; do \
+		rm -i $$file; \
+	done
+	@for file in logs/*; do \
 		rm -i $$file; \
 	done
 .PHONY: clean
